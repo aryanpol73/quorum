@@ -1,0 +1,21 @@
+{
+  "name": "Tata Motors Passenger Vehicles Limited",
+  "sector": "Consumer Cyclical",
+  "industry": "Auto Manufacturers",
+  "currency": "INR",
+  "metrics": {
+    "pe": null,
+    "forward_pe": 6.37,
+    "pb": 0.97,
+    "debt_to_equity": 0.7,
+    "revenue_growth_pct": -8.2,
+    "profit_margin_pct": 22.81,
+    "roe_pct": null,
+    "market_cap_cr": 108593
+  },
+  "missing": [
+    "P/E (trailing)"
+  ],
+  "fetched_at": "2026-11-09T07:35:46+00:00",
+  "yahoo_symbol": "TMPV.NS"
+}

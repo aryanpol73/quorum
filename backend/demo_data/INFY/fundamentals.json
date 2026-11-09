@@ -1,0 +1,19 @@
+{
+  "name": "Infosys Limited",
+  "sector": "Technology",
+  "industry": "Information Technology Services",
+  "currency": "INR",
+  "metrics": {
+    "pe": 15.17,
+    "forward_pe": 14.37,
+    "pb": 4.77,
+    "debt_to_equity": 0.09,
+    "revenue_growth_pct": 1.4,
+    "profit_margin_pct": 16.22,
+    "roe_pct": 29.95,
+    "market_cap_cr": 465186
+  },
+  "missing": [],
+  "fetched_at": "2026-11-09T07:35:46+00:00",
+  "yahoo_symbol": "INFY.NS"
+}

@@ -1,0 +1,23 @@
+# secrets / local config
+.env
+
+# python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# runtime data (SQLite portfolio, API cache)
+backend/storage/
+backend/.cache/
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+
+# editors / OS
+.vscode/
+.idea/
+.claude/
+.DS_Store
+Thumbs.db

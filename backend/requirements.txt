@@ -1,0 +1,15 @@
+# QUORUM backend - Python 3.11+
+fastapi==0.162.2
+uvicorn[standard]==0.54.0
+langgraph==1.2.20
+google-genai==3.0.0
+yfinance==1.8.0
+curl_cffi==0.17.0
+feedparser==6.0.14
+httpx==0.28.1
+pandas==3.1.1
+numpy==2.4.6
+sqlmodel==0.0.48
+pydantic==2.14.3
+python-dotenv==1.2.4
+charset-normalizer==3.5.2
