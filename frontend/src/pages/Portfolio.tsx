@@ -1,9 +1,11 @@
-import { LineChart as LineIcon, RotateCcw, Wallet } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
-import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { motion } from 'framer-motion'
+import { History, LineChart as LineIcon, RotateCcw, ScrollText, Wallet } from 'lucide-react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { Area, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useToast } from '../components/Toasts'
-import { Empty, Panel, Stat } from '../components/ui'
+import { AnimatedNumber, Empty, Panel } from '../components/ui'
 import { getJSON, postJSON } from '../lib/api'
+import { CHART } from '../lib/chartTheme'
 import { fmtDate, fmtDateTime, num, pct, rupee, tone } from '../lib/format'
 import type { HistoryPoint, PortfolioSnapshot, TradeRecord } from '../types'
 
@@ -17,6 +19,24 @@ interface RunRow {
   price: number | null
   llm_mode: string
 }
+
+function StatTile({ label, children, sub, index, accent }: { label: string; children: ReactNode; sub?: ReactNode; index: number; accent?: string }) {
+  return (
+    <motion.div
+      whileHover={{ y: -3 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+      className="panel rise relative overflow-hidden px-5 py-4"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
+      {accent && <span className="absolute inset-x-0 top-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />}
+      <div className="label">{label}</div>
+      <div className="tabular mt-1.5 truncate text-[22px] text-fg">{children}</div>
+      {sub != null && <div className="tabular mt-0.5 truncate text-[12px] text-muted">{sub}</div>}
+    </motion.div>
+  )
+}
+
+const TH = ({ children }: { children: ReactNode }) => <th className="label px-4 py-3 text-left font-semibold">{children}</th>
 
 export function Portfolio() {
   const toast = useToast()
@@ -64,115 +84,140 @@ export function Portfolio() {
 
   const series = history?.series ?? []
   const lastPoint = series[series.length - 1]
+  const money = (v: number) => rupee(v)
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-mono text-[15px] tracking-[0.2em] text-amber uppercase">Paper portfolio</h1>
-        <span className="text-[12px] text-dim">Virtual ₹1,00,000 · trades placed by the Portfolio Manager at the latest close · no shorting</span>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end gap-4 pt-2">
+        <div>
+          <div className="eyebrow">The treasury</div>
+          <h1 className="title-serif text-[40px] leading-tight md:text-[46px]">
+            Paper <span className="gold-text italic">portfolio</span>
+          </h1>
+          <p className="mt-1 text-[13px] text-dim">A virtual ₹1,00,000. The Portfolio Manager trades at the latest close, and short selling is disabled.</p>
+        </div>
         <div className="ml-auto flex items-center gap-2">
           {confirmReset ? (
             <>
-              <span className="text-[12px] text-warn">Delete all paper trades?</span>
-              <button onClick={reset} className="rounded border border-down/60 px-3 py-1.5 font-mono text-[11px] text-down uppercase hover:bg-down/10">
+              <span className="text-[12.5px] text-warn">Delete every paper trade?</span>
+              <button onClick={reset} className="btn-session px-4 py-2 text-[12px] font-bold">
                 Yes, reset
               </button>
-              <button onClick={() => setConfirmReset(false)} className="rounded border border-line px-3 py-1.5 font-mono text-[11px] text-muted uppercase hover:bg-ink-800">
+              <button onClick={() => setConfirmReset(false)} className="btn-ghost px-4 py-2 text-[12px] font-semibold">
                 Cancel
               </button>
             </>
           ) : (
-            <button
-              onClick={() => setConfirmReset(true)}
-              className="flex items-center gap-1.5 rounded border border-line px-3 py-1.5 font-mono text-[11px] text-muted uppercase hover:bg-ink-800 hover:text-fg"
-            >
-              <RotateCcw size={12} /> Reset
+            <button onClick={() => setConfirmReset(true)} className="btn-ghost px-4 py-2 text-[12px] font-semibold">
+              <RotateCcw size={13} /> Reset portfolio
             </button>
           )}
         </div>
       </div>
 
-      <div className="panel grid grid-cols-2 gap-4 p-4 md:grid-cols-3 xl:grid-cols-6">
-        <Stat label="Total value" value={rupee(snap?.total_value)} />
-        <Stat label="Cash" value={rupee(snap?.cash)} />
-        <Stat label="Invested" value={rupee(snap?.invested)} />
-        <Stat label="Total P&L" value={rupee(snap?.pnl)} valueClass={tone(snap?.pnl)} sub={pct(snap?.pnl_pct)} />
-        <Stat label="Realised P&L" value={rupee(snap?.realised_pnl)} valueClass={tone(snap?.realised_pnl)} />
-        <Stat label="Trades" value={snap?.trade_count ?? '—'} sub={`${snap?.holdings.length ?? 0} open positions`} />
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <StatTile label="Total value" index={0} accent="var(--color-gold)">
+          <AnimatedNumber value={snap?.total_value} format={money} />
+        </StatTile>
+        <StatTile label="Cash" index={1}>
+          <AnimatedNumber value={snap?.cash} format={money} />
+        </StatTile>
+        <StatTile label="Invested" index={2}>
+          <AnimatedNumber value={snap?.invested} format={money} />
+        </StatTile>
+        <StatTile label="Total P&L" index={3} sub={<span className={tone(snap?.pnl_pct)}>{pct(snap?.pnl_pct)}</span>} accent={snap && snap.pnl < 0 ? 'var(--color-down)' : 'var(--color-up)'}>
+          <span className={tone(snap?.pnl)}>
+            <AnimatedNumber value={snap?.pnl} format={money} />
+          </span>
+        </StatTile>
+        <StatTile label="Realised P&L" index={4}>
+          <span className={tone(snap?.realised_pnl)}>
+            <AnimatedNumber value={snap?.realised_pnl} format={money} />
+          </span>
+        </StatTile>
+        <StatTile label="Trades" index={5} sub={`${snap?.holdings.length ?? 0} open position${snap?.holdings.length === 1 ? '' : 's'}`}>
+          {snap?.trade_count ?? '—'}
+        </StatTile>
       </div>
 
       <Panel
-        title="Portfolio vs Nifty 50 · normalised to 100"
-        icon={<LineIcon size={13} />}
+        eyebrow="Performance"
+        title="Portfolio vs Nifty 50 · rebased to 100"
+        icon={<LineIcon size={14} />}
         right={
           lastPoint ? (
-            <span className="font-mono text-[11px]">
-              <span className="text-amber">QUORUM {num(lastPoint.portfolio)}</span>
-              <span className="ml-3 text-info">NIFTY {num(lastPoint.nifty)}</span>
+            <span className="tabular flex gap-4 text-[12px]">
+              <span className="text-gold">QUORUM {num(lastPoint.portfolio)}</span>
+              <span className="text-info">NIFTY {num(lastPoint.nifty)}</span>
             </span>
           ) : null
         }
-        bodyClass="p-3"
+        bodyClass="p-4"
       >
-        <div className="h-[300px]">
+        <div className="h-[320px]">
           {series.length === 0 ? (
-            <Empty>{loading ? 'Loading…' : history?.message ?? 'No trades yet.'}</Empty>
+            <Empty icon={<LineIcon size={24} />}>{loading ? 'Loading…' : history?.message ?? 'No trades yet.'}</Empty>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={series} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
-                <CartesianGrid stroke="#141a21" vertical={false} />
-                <XAxis dataKey="date" tick={{ fill: '#6f7a88', fontSize: 10, fontFamily: 'IBM Plex Mono' }} tickLine={false} axisLine={{ stroke: '#1c242e' }} minTickGap={32} />
+              <ComposedChart data={series} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
+                <defs>
+                  <linearGradient id="pf-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stopColor="#dcb76c" stopOpacity={0.35} />
+                    <stop offset="1" stopColor="#dcb76c" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke={CHART.grid} vertical={false} />
+                <XAxis dataKey="date" tick={CHART.tick} tickLine={false} axisLine={{ stroke: CHART.axis }} minTickGap={32} />
                 <YAxis
                   domain={[(min: number) => Math.floor(Math.min(min, 100) - 1), (max: number) => Math.ceil(Math.max(max, 100) + 1)]}
                   tickFormatter={(v: number) => v.toFixed(0)}
-                  tick={{ fill: '#6f7a88', fontSize: 10, fontFamily: 'IBM Plex Mono' }}
+                  tick={CHART.tick}
                   tickLine={false}
                   axisLine={false}
                   width={40}
                 />
-                <ReferenceLine y={100} stroke="#2a3542" strokeDasharray="4 4" />
+                <ReferenceLine y={100} stroke="#3a3160" strokeDasharray="4 4" />
                 <Tooltip
-                  contentStyle={{ background: '#0e131a', border: '1px solid #2a3542', borderRadius: 6, fontFamily: 'IBM Plex Mono', fontSize: 11 }}
-                  labelStyle={{ color: '#8b96a4' }}
+                  contentStyle={CHART.tooltip}
+                  labelStyle={{ color: '#aca4c4' }}
+                  cursor={{ stroke: 'rgba(220,183,108,0.35)' }}
                   formatter={(v, name) => [num(Number(v)), name === 'portfolio' ? 'QUORUM portfolio' : 'Nifty 50']}
                 />
-                <Legend wrapperStyle={{ fontFamily: 'IBM Plex Mono', fontSize: 11 }} formatter={(v) => (v === 'portfolio' ? 'QUORUM portfolio' : 'Nifty 50 (^NSEI)')} />
-                <Line type="monotone" dataKey="portfolio" stroke="#ffb224" strokeWidth={2} dot={series.length < 3} isAnimationActive />
-                <Line type="monotone" dataKey="nifty" stroke="#4cc2ff" strokeWidth={1.6} dot={series.length < 3} isAnimationActive />
-              </LineChart>
+                <Legend wrapperStyle={{ fontFamily: 'Manrope', fontSize: 12 }} formatter={(v) => (v === 'portfolio' ? 'QUORUM portfolio' : 'Nifty 50 (^NSEI)')} />
+                <Area type="monotone" dataKey="portfolio" stroke="#dcb76c" strokeWidth={2.4} fill="url(#pf-fill)" dot={series.length < 3} isAnimationActive />
+                <Line type="monotone" dataKey="nifty" stroke="#8aaeff" strokeWidth={1.8} dot={series.length < 3} isAnimationActive />
+              </ComposedChart>
             </ResponsiveContainer>
           )}
         </div>
-        {history?.message && series.length > 0 && <p className="mt-2 text-[11px] text-dim">{history.message}</p>}
+        {history?.message && series.length > 0 && <p className="mt-2 text-[12px] text-dim">{history.message}</p>}
       </Panel>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Panel title="Holdings" icon={<Wallet size={13} />} bodyClass="overflow-x-auto">
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel eyebrow="Positions" title="Holdings" icon={<Wallet size={14} />} bodyClass="overflow-x-auto">
           {!snap?.holdings.length ? (
             <Empty>No open positions.</Empty>
           ) : (
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[12.5px]">
               <thead>
-                <tr className="label border-b border-line text-left">
+                <tr className="border-b border-line">
                   {['Ticker', 'Qty', 'Avg cost', 'Last', 'Value', 'Unrealised', 'Weight'].map((h) => (
-                    <th key={h} className="px-3 py-2 font-normal">
-                      {h}
-                    </th>
+                    <TH key={h}>{h}</TH>
                   ))}
                 </tr>
               </thead>
               <tbody className="tabular">
                 {snap.holdings.map((h) => (
-                  <tr key={h.ticker} className="border-b border-line/60">
-                    <td className="px-3 py-2 text-fg">{h.ticker}</td>
-                    <td className="px-3 py-2">{h.qty}</td>
-                    <td className="px-3 py-2">{rupee(h.avg_cost)}</td>
-                    <td className="px-3 py-2">{rupee(h.last_price)}</td>
-                    <td className="px-3 py-2">{rupee(h.market_value)}</td>
-                    <td className={`px-3 py-2 ${tone(h.unrealised_pnl)}`}>
-                      {rupee(h.unrealised_pnl)} <span className="text-[10px]">({pct(h.unrealised_pct)})</span>
+                  <tr key={h.ticker} className="row-hover border-b border-line/50">
+                    <td className="px-4 py-3 font-sans font-semibold text-fg">{h.ticker}</td>
+                    <td className="px-4 py-3">{h.qty}</td>
+                    <td className="px-4 py-3">{rupee(h.avg_cost)}</td>
+                    <td className="px-4 py-3">{rupee(h.last_price)}</td>
+                    <td className="px-4 py-3">{rupee(h.market_value)}</td>
+                    <td className={`px-4 py-3 ${tone(h.unrealised_pnl)}`}>
+                      {rupee(h.unrealised_pnl)} <span className="text-[10.5px]">({pct(h.unrealised_pct)})</span>
                     </td>
-                    <td className="px-3 py-2">{num(h.weight_pct, 1)}%</td>
+                    <td className="px-4 py-3">{num(h.weight_pct, 1)}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -180,30 +225,30 @@ export function Portfolio() {
           )}
         </Panel>
 
-        <Panel title="Recent decisions (agent memory)" bodyClass="overflow-x-auto">
+        <Panel eyebrow="Agent memory" title="Recent decisions" icon={<History size={14} />} bodyClass="overflow-x-auto">
           {!runs.length ? (
-            <Empty>Every live analysis is stored and fed back to the Portfolio Manager as memory.</Empty>
+            <Empty>Every live analysis is stored and shown to the Portfolio Manager as memory.</Empty>
           ) : (
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[12.5px]">
               <thead>
-                <tr className="label border-b border-line text-left">
+                <tr className="border-b border-line">
                   {['When', 'Ticker', 'Decision', 'Conf', 'Size', 'Price', 'LLM'].map((h) => (
-                    <th key={h} className="px-3 py-2 font-normal">
-                      {h}
-                    </th>
+                    <TH key={h}>{h}</TH>
                   ))}
                 </tr>
               </thead>
               <tbody className="tabular">
                 {runs.map((r) => (
-                  <tr key={r.id} className="border-b border-line/60">
-                    <td className="px-3 py-2 text-muted">{fmtDateTime(r.ts)}</td>
-                    <td className="px-3 py-2 text-fg">{r.ticker}</td>
-                    <td className={`px-3 py-2 ${r.decision === 'BUY' ? 'text-up' : r.decision === 'SELL' ? 'text-down' : 'text-amber'}`}>{r.decision}</td>
-                    <td className="px-3 py-2">{r.confidence}</td>
-                    <td className="px-3 py-2">{num(r.position_size_pct, 1)}%</td>
-                    <td className="px-3 py-2">{rupee(r.price)}</td>
-                    <td className="px-3 py-2 text-dim">{r.llm_mode}</td>
+                  <tr key={r.id} className="row-hover border-b border-line/50">
+                    <td className="px-4 py-3 text-muted">{fmtDateTime(r.ts)}</td>
+                    <td className="px-4 py-3 font-sans font-semibold text-fg">{r.ticker}</td>
+                    <td className={`px-4 py-3 font-serif text-[15px] font-bold ${r.decision === 'BUY' ? 'text-up' : r.decision === 'SELL' ? 'text-down' : 'text-gold'}`}>
+                      {r.decision}
+                    </td>
+                    <td className="px-4 py-3">{r.confidence}</td>
+                    <td className="px-4 py-3">{num(r.position_size_pct, 1)}%</td>
+                    <td className="px-4 py-3">{rupee(r.price)}</td>
+                    <td className="px-4 py-3 text-dim">{r.llm_mode}</td>
                   </tr>
                 ))}
               </tbody>
@@ -212,33 +257,35 @@ export function Portfolio() {
         </Panel>
       </div>
 
-      <Panel title="Trade history" bodyClass="overflow-x-auto">
+      <Panel eyebrow="The ledger of orders" title="Trade history" icon={<ScrollText size={14} />} bodyClass="overflow-x-auto">
         {!trades.length ? (
-          <Empty>No paper trades yet. Run an analysis on the Trading Floor.</Empty>
+          <Empty>No paper trades yet. Convene the council on the Trading Floor.</Empty>
         ) : (
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[12.5px]">
             <thead>
-              <tr className="label border-b border-line text-left">
+              <tr className="border-b border-line">
                 {['#', 'Market date', 'Placed', 'Ticker', 'Side', 'Qty', 'Price', 'Value', 'Conf', 'Note'].map((h) => (
-                  <th key={h} className="px-3 py-2 font-normal">
-                    {h}
-                  </th>
+                  <TH key={h}>{h}</TH>
                 ))}
               </tr>
             </thead>
             <tbody className="tabular">
               {trades.map((t) => (
-                <tr key={t.id} className="border-b border-line/60">
-                  <td className="px-3 py-2 text-dim">{t.id}</td>
-                  <td className="px-3 py-2">{fmtDate(t.trade_date)}</td>
-                  <td className="px-3 py-2 text-muted">{fmtDateTime(t.ts)}</td>
-                  <td className="px-3 py-2 text-fg">{t.ticker}</td>
-                  <td className={`px-3 py-2 ${t.side === 'BUY' ? 'text-up' : 'text-down'}`}>{t.side}</td>
-                  <td className="px-3 py-2">{t.qty}</td>
-                  <td className="px-3 py-2">{rupee(t.price)}</td>
-                  <td className="px-3 py-2">{rupee(t.value)}</td>
-                  <td className="px-3 py-2">{t.confidence ?? '—'}</td>
-                  <td className="px-3 py-2 font-sans text-muted">{t.note}</td>
+                <tr key={t.id} className="row-hover border-b border-line/50">
+                  <td className="px-4 py-3 text-dim">{t.id}</td>
+                  <td className="px-4 py-3">{fmtDate(t.trade_date)}</td>
+                  <td className="px-4 py-3 text-muted">{fmtDateTime(t.ts)}</td>
+                  <td className="px-4 py-3 font-sans font-semibold text-fg">{t.ticker}</td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full border px-2 py-0.5 text-[10.5px] font-bold ${t.side === 'BUY' ? 'border-up/35 bg-up/10 text-up' : 'border-down/35 bg-down/10 text-down'}`}>
+                      {t.side}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">{t.qty}</td>
+                  <td className="px-4 py-3">{rupee(t.price)}</td>
+                  <td className="px-4 py-3">{rupee(t.value)}</td>
+                  <td className="px-4 py-3">{t.confidence ?? '—'}</td>
+                  <td className="px-4 py-3 font-sans text-muted">{t.note}</td>
                 </tr>
               ))}
             </tbody>

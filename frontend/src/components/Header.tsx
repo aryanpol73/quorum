@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import type { Health } from '../types'
 
@@ -24,12 +25,37 @@ function useIstClock() {
     hour12: false,
   }).formatToParts(now)
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? ''
-  const hh = Number(get('hour'))
-  const mm = Number(get('minute'))
-  const day = get('weekday')
-  const minutes = hh * 60 + mm
-  const open = !['Sat', 'Sun'].includes(day) && minutes >= 9 * 60 + 15 && minutes < 15 * 60 + 30
+  const minutes = Number(get('hour')) * 60 + Number(get('minute'))
+  const open = !['Sat', 'Sun'].includes(get('weekday')) && minutes >= 9 * 60 + 15 && minutes < 15 * 60 + 30
   return { time: `${get('hour')}:${get('minute')}:${get('second')}`, open }
+}
+
+/** Crest: a "Q" monogram inside a gold ring with seven seats — one per agent. */
+export function Crest({ size = 40 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
+      <defs>
+        <linearGradient id="crest-gold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#f8e4ae" />
+          <stop offset="0.5" stopColor="#dcb76c" />
+          <stop offset="1" stopColor="#9e7a3a" />
+        </linearGradient>
+        <radialGradient id="crest-core" cx="0.4" cy="0.35" r="0.75">
+          <stop offset="0" stopColor="#2a2150" />
+          <stop offset="1" stopColor="#0d0a1b" />
+        </radialGradient>
+      </defs>
+      <circle cx="32" cy="32" r="29" fill="url(#crest-core)" stroke="url(#crest-gold)" strokeWidth="1.6" />
+      <circle cx="32" cy="32" r="23" fill="none" stroke="url(#crest-gold)" strokeOpacity="0.45" strokeWidth="0.8" />
+      {Array.from({ length: 7 }, (_, i) => {
+        const a = (i / 7) * Math.PI * 2 - Math.PI / 2
+        return <circle key={i} cx={32 + Math.cos(a) * 26} cy={32 + Math.sin(a) * 26} r="1.9" fill="url(#crest-gold)" />
+      })}
+      <text x="32" y="41" textAnchor="middle" fontFamily="'Cormorant Garamond', Georgia, serif" fontSize="26" fontWeight="700" fill="url(#crest-gold)">
+        Q
+      </text>
+    </svg>
+  )
 }
 
 export function Header({ route, health, healthError }: { route: Route; health: Health | null; healthError: boolean }) {
@@ -38,61 +64,69 @@ export function Header({ route, health, healthError }: { route: Route; health: H
   const llmOnline = llm?.state === 'online'
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-ink-950/95 backdrop-blur">
-      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2.5">
-        <a href="#/floor" className="flex items-center gap-2.5" aria-label="QUORUM home">
-          <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden>
-            <circle cx="16" cy="16" r="11" fill="none" stroke="var(--color-amber)" strokeWidth="3" />
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => {
-              const a = (i / 7) * Math.PI * 2 - Math.PI / 2
-              return <circle key={i} cx={16 + Math.cos(a) * 11} cy={16 + Math.sin(a) * 11} r="2.2" fill="var(--color-ink-950)" stroke="var(--color-amber)" strokeWidth="1.4" />
-            })}
-            <circle cx="16" cy="16" r="3.2" fill="var(--color-up)" />
-          </svg>
+    <header className="sticky top-0 z-40 border-b border-gold/10 bg-ink-950/75 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-[1560px] flex-wrap items-center gap-x-8 gap-y-3 px-5 py-3">
+        <a href="#/floor" className="group flex items-center gap-3" aria-label="QUORUM home">
+          <motion.span whileHover={{ rotate: 12, scale: 1.05 }} transition={{ type: 'spring', stiffness: 260, damping: 14 }}>
+            <Crest />
+          </motion.span>
           <div className="leading-none">
-            <div className="font-mono text-[17px] font-bold tracking-[0.22em] text-fg">QUORUM</div>
-            <div className="mt-1 font-mono text-[9px] tracking-[0.18em] text-dim uppercase">Agents debate · the floor decides</div>
+            <div className="gold-text font-serif text-[25px] font-semibold tracking-[0.3em]">QUORUM</div>
+            <div className="mt-1 text-[9.5px] font-semibold tracking-[0.32em] text-dim uppercase">The council of agents</div>
           </div>
         </a>
 
-        <nav className="flex items-center gap-1" aria-label="Main">
-          {NAV.map((n) => (
-            <a
-              key={n.key}
-              href={`#/${n.key}`}
-              aria-current={route === n.key ? 'page' : undefined}
-              className={`rounded px-3 py-1.5 font-mono text-[12px] tracking-wider uppercase transition ${
-                route === n.key ? 'bg-amber text-ink-950' : 'text-muted hover:bg-ink-800 hover:text-fg'
-              }`}
-            >
-              <span className={`mr-1.5 text-[10px] ${route === n.key ? 'text-ink-950/60' : 'text-dim'}`}>{n.hotkey}</span>
-              {n.label}
-            </a>
-          ))}
+        <nav className="relative flex items-center rounded-full border border-gold/15 bg-ink-900/70 p-1" aria-label="Main">
+          {NAV.map((n) => {
+            const active = route === n.key
+            return (
+              <a
+                key={n.key}
+                href={`#/${n.key}`}
+                aria-current={active ? 'page' : undefined}
+                title={`${n.label} (${n.hotkey})`}
+                className={`relative z-10 rounded-full px-4 py-1.5 text-[12.5px] font-semibold tracking-wide transition-colors duration-300 ${
+                  active ? 'text-gold-bright' : 'text-muted hover:text-fg'
+                }`}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="nav-pill"
+                    className="absolute inset-0 -z-10 rounded-full border border-gold/40"
+                    style={{ background: 'linear-gradient(180deg, rgba(220,183,108,0.2), rgba(220,183,108,0.06))', boxShadow: '0 0 24px -8px rgba(220,183,108,0.6)' }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                  />
+                )}
+                {n.label}
+              </a>
+            )
+          })}
         </nav>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2 font-mono text-[11px]">
+        <div className="ml-auto flex flex-wrap items-center gap-2 text-[11px] font-semibold">
           {healthError ? (
-            <span className="rounded border border-down/50 bg-down/10 px-2 py-1 text-down">BACKEND OFFLINE</span>
+            <span className="rounded-full border border-down/40 bg-down/10 px-3 py-1 text-down">Backend offline</span>
           ) : (
             <>
-              {health?.demo_mode && <span className="rounded border border-violet/50 bg-violet/10 px-2 py-1 text-violet">DEMO MODE</span>}
+              {health?.demo_mode && <span className="rounded-full border border-violet/40 bg-violet/10 px-3 py-1 tracking-wide text-violet">Demo mode</span>}
               <span
-                className={`flex items-center gap-1.5 rounded border px-2 py-1 ${
-                  llmOnline ? 'border-info/40 bg-info/10 text-info' : 'border-amber/40 bg-amber/10 text-amber'
+                className={`flex items-center gap-2 rounded-full border px-3 py-1 tracking-wide ${
+                  llmOnline ? 'border-info/35 bg-info/10 text-info' : 'border-gold/30 bg-gold/[0.07] text-gold'
                 }`}
                 title={llm?.reason ?? undefined}
               >
-                <span className={`h-1.5 w-1.5 rounded-full ${llmOnline ? 'bg-info' : 'bg-amber'}`} />
-                {llm ? (llmOnline ? llm.model : `OFFLINE ENGINE${llm.state === 'cooldown' ? ' (cooldown)' : ''}`) : 'LLM …'}
+                <span className={`h-1.5 w-1.5 rounded-full ${llmOnline ? 'bg-info shadow-[0_0_8px] shadow-info' : 'bg-gold'}`} />
+                {llm ? (llmOnline ? llm.model : `Offline engine${llm.state === 'cooldown' ? ' · cooldown' : ''}`) : 'Connecting…'}
               </span>
             </>
           )}
-          <span className={`flex items-center gap-1.5 rounded border px-2 py-1 ${clock.open ? 'border-up/40 text-up' : 'border-line text-muted'}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${clock.open ? 'animate-pulse bg-up' : 'bg-dim'}`} />
-            NSE {clock.open ? 'OPEN' : 'CLOSED'}
+          <span className={`flex items-center gap-2 rounded-full border px-3 py-1 tracking-wide ${clock.open ? 'border-up/35 text-up' : 'border-line-strong text-muted'}`}>
+            <span className={`relative h-1.5 w-1.5 rounded-full ${clock.open ? 'bg-up' : 'bg-dim'}`}>
+              {clock.open && <span className="absolute inset-0 animate-ping rounded-full bg-up" />}
+            </span>
+            NSE {clock.open ? 'open' : 'closed'}
           </span>
-          <span className="tabular rounded border border-line px-2 py-1 text-fg">{clock.time} IST</span>
+          <span className="tabular rounded-full border border-line-strong px-3 py-1 text-fg">{clock.time} IST</span>
         </div>
       </div>
     </header>
@@ -101,14 +135,21 @@ export function Header({ route, health, healthError }: { route: Route; health: H
 
 export function Footer() {
   return (
-    <footer className="mt-8 border-t border-line">
-      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-1 px-4 py-4 text-[11px] text-dim">
-        <span className="font-mono tracking-wider text-warn uppercase">Educational simulation · not financial advice</span>
-        <span>
-          QUORUM is a college mini-project demonstrating multi-agent AI. Decisions are produced by language models and simple rules on
-          public data, trade a virtual ₹1,00,000 portfolio only, and must not be used for real investment decisions.
+    <footer className="mt-12">
+      <div className="hairline" />
+      <div className="mx-auto flex max-w-[1560px] flex-wrap items-center gap-x-6 gap-y-2 px-5 py-6 text-[12px] text-dim">
+        <span className="flex items-center gap-2">
+          <Crest size={22} />
+          <span className="gold-text font-serif text-[15px] font-semibold tracking-[0.25em]">QUORUM</span>
         </span>
-        <span className="ml-auto font-mono">Data: Yahoo Finance · Google News RSS</span>
+        <span className="rounded-full border border-warn/30 bg-warn/[0.06] px-3 py-1 text-[10px] font-bold tracking-[0.18em] text-warn uppercase">
+          Educational simulation · not financial advice
+        </span>
+        <span className="max-w-3xl leading-relaxed">
+          A college mini-project on multi-agent AI. Decisions come from language models and simple rules on public data and trade a virtual
+          ₹1,00,000 portfolio only. Do not use them for real investment decisions.
+        </span>
+        <span className="ml-auto text-[11px]">Data · Yahoo Finance · Google News RSS · Charts by TradingView Lightweight Charts</span>
       </div>
     </footer>
   )

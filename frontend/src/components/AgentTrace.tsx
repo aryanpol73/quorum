@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown, GitBranch } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getJSON } from '../lib/api'
@@ -49,7 +48,7 @@ function GraphDiagram({ nodes, status }: { nodes: NodeSpan[]; status: RunState['
     <svg viewBox="0 0 1090 220" className="h-auto w-full" role="img" aria-label="LangGraph execution graph">
       <defs>
         <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="#3a4654" />
+          <path d="M0,0 L10,5 L0,10 z" fill="#4a4078" />
         </marker>
       </defs>
       {EDGES.map(([a, b, cond]) => {
@@ -58,14 +57,14 @@ function GraphDiagram({ nodes, status }: { nodes: NodeSpan[]; status: RunState['
         const x1 = p.x + (a.startsWith('__') ? 22 : W / 2)
         const x2 = q.x - (b.startsWith('__') ? 22 : W / 2)
         if (a === 'bull' && b === 'bear') {
-          return <line key={a + b} x1={p.x} y1={p.y + H / 2} x2={q.x} y2={q.y - H / 2} stroke="#3a4654" strokeWidth="1.3" markerEnd="url(#arrow)" />
+          return <line key={a + b} x1={p.x} y1={p.y + H / 2} x2={q.x} y2={q.y - H / 2} stroke="#4a4078" strokeWidth="1.3" markerEnd="url(#arrow)" />
         }
         return (
           <path
             key={a + b}
             d={`M${x1},${p.y} C${(x1 + x2) / 2},${p.y} ${(x1 + x2) / 2},${q.y} ${x2},${q.y}`}
             fill="none"
-            stroke="#3a4654"
+            stroke="#4a4078"
             strokeWidth="1.3"
             strokeDasharray={cond ? '4 3' : undefined}
             markerEnd="url(#arrow)"
@@ -76,7 +75,7 @@ function GraphDiagram({ nodes, status }: { nodes: NodeSpan[]; status: RunState['
       <path
         d={`M${NODES.bear.x - W / 2},${NODES.bear.y} C${NODES.bear.x - 95},${NODES.bear.y} ${NODES.bull.x - 95},${NODES.bull.y} ${NODES.bull.x - W / 2},${NODES.bull.y}`}
         fill="none"
-        stroke="#3a4654"
+        stroke="#4a4078"
         strokeWidth="1.3"
         strokeDasharray="4 3"
         markerEnd="url(#arrow)"
@@ -90,23 +89,23 @@ function GraphDiagram({ nodes, status }: { nodes: NodeSpan[]; status: RunState['
       {Object.entries(NODES).map(([id, p]) => {
         const st = state(id)
         const terminal = id.startsWith('__')
-        const stroke = st === 'active' ? '#ffb224' : st === 'done' ? '#19d48a' : '#2a3542'
-        const fill = st === 'active' ? 'rgba(255,178,36,0.12)' : st === 'done' ? 'rgba(25,212,138,0.07)' : '#0e131a'
+        const stroke = st === 'active' ? '#dcb76c' : st === 'done' ? '#3fd8a2' : '#3a3160'
+        const fill = st === 'active' ? 'rgba(220,183,108,0.16)' : st === 'done' ? 'rgba(63,216,162,0.09)' : '#120e25'
         const n = count(id)
         return (
           <g key={id}>
             {terminal ? (
               <circle cx={p.x} cy={p.y} r="20" fill={fill} stroke={stroke} strokeWidth="1.4" />
             ) : (
-              <rect x={p.x - W / 2} y={p.y - H / 2} width={W} height={H} rx="5" fill={fill} stroke={stroke} strokeWidth="1.4">
+              <rect x={p.x - W / 2} y={p.y - H / 2} width={W} height={H} rx="10" fill={fill} stroke={stroke} strokeWidth="1.4">
                 {st === 'active' && <animate attributeName="stroke-opacity" values="1;0.35;1" dur="1.1s" repeatCount="indefinite" />}
               </rect>
             )}
-            <text x={p.x} y={p.y + 3.5} textAnchor="middle" fontSize={terminal ? 9 : 10.5} className="font-mono" fill={st === 'idle' ? '#57616e' : '#d8dee6'}>
+            <text x={p.x} y={p.y + 3.5} textAnchor="middle" fontSize={terminal ? 9 : 10.5} className="font-mono" fill={st === 'idle' ? '#6f6891' : '#f5eedd'}>
               {p.label}
             </text>
             {n > 1 && (
-              <text x={p.x + W / 2 - 4} y={p.y - H / 2 - 4} textAnchor="end" fontSize="9" className="font-mono" fill="#ffb224">
+              <text x={p.x + W / 2 - 4} y={p.y - H / 2 - 4} textAnchor="end" fontSize="9" className="font-mono" fill="#dcb76c">
                 ×{n}
               </text>
             )}
@@ -123,7 +122,7 @@ function Timeline({ nodes, now }: { nodes: NodeSpan[]; now: number }) {
   const t1 = Math.max(now, ...nodes.map((n) => n.end ?? now))
   const span = Math.max(0.001, t1 - t0)
   const color = (node: string) =>
-    node.includes('analyst') ? '#4cc2ff' : node === 'bull' ? '#19d48a' : node === 'bear' ? '#ff5a5f' : node === 'risk_manager' ? '#f5c542' : '#ffb224'
+    node.includes('analyst') ? '#8aaeff' : node === 'bull' ? '#3fd8a2' : node === 'bear' ? '#f25a7c' : node === 'risk_manager' ? '#f4c25c' : '#dcb76c'
   return (
     <div className="space-y-1">
       {nodes.map((n, i) => {
@@ -133,10 +132,10 @@ function Timeline({ nodes, now }: { nodes: NodeSpan[]; now: number }) {
         return (
           <div key={i} className="grid grid-cols-[130px_1fr_64px] items-center gap-2 font-mono text-[10.5px]">
             <span className="truncate text-muted">{n.node}</span>
-            <div className="relative h-3.5 rounded-sm bg-ink-800">
+            <div className="relative h-3 rounded-full bg-ink-800">
               <div
-                className={`absolute top-0 h-full rounded-sm ${n.end == null ? 'animate-pulse' : ''}`}
-                style={{ left: `${left}%`, width: `${width}%`, background: color(n.node), opacity: 0.85 }}
+                className={`absolute top-0 h-full rounded-full transition-[width] duration-300 ${n.end == null ? 'animate-pulse' : ''}`}
+                style={{ left: `${left}%`, width: `${width}%`, background: `linear-gradient(90deg, ${color(n.node)}99, ${color(n.node)})`, boxShadow: `0 0 10px -2px ${color(n.node)}` }}
               />
             </div>
             <span className="tabular text-right text-dim">{n.ms != null ? `${n.ms}ms` : '…'}</span>
@@ -168,15 +167,20 @@ export function AgentTrace({ run }: { run: RunState }) {
   }, [open, mermaid])
 
   return (
-    <section className="panel">
+    <section className="panel overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="panel-head w-full cursor-pointer text-left hover:bg-ink-850"
+        className="group flex w-full cursor-pointer items-center gap-3 px-5 py-4 text-left transition-colors duration-300 hover:bg-gold/[0.04]"
         aria-expanded={open}
       >
-        <GitBranch size={13} />
-        <span>Agent trace · LangGraph execution</span>
-        <span className="ml-auto flex items-center gap-3 font-mono text-[10px] tracking-normal text-dim normal-case">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-gold/25 bg-gold/[0.06] text-gold">
+          <GitBranch size={14} />
+        </span>
+        <span className="leading-tight">
+          <span className="eyebrow block">For the viva</span>
+          <span className="title-serif block text-[19px]">Agent trace · LangGraph execution</span>
+        </span>
+        <span className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-1 font-mono text-[10.5px] text-dim">
           {run.meta && (
             <>
               <span>run {run.meta.run_id}</span>
@@ -186,37 +190,38 @@ export function AgentTrace({ run }: { run: RunState }) {
               {run.totalMs != null && <span>{(run.totalMs / 1000).toFixed(1)}s</span>}
             </>
           )}
-          <ChevronDown size={14} className={`transition ${open ? 'rotate-180' : ''}`} />
+          <span className="grid h-7 w-7 place-items-center rounded-full border border-line-strong text-muted transition-all duration-300 group-hover:border-gold/40 group-hover:text-gold">
+            <ChevronDown size={14} className={`transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+          </span>
         </span>
       </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="space-y-5 p-4">
+      <div className="drawer" data-open={open} aria-hidden={!open} inert={!open}>
+        <div>
+            <div className="space-y-6 border-t border-gold/10 p-5">
               <div>
-                <div className="label mb-2">Graph topology · live node state (dashed = conditional edge)</div>
-                <div className="rounded-md border border-line bg-ink-950 p-2">
+                <div className="eyebrow mb-2.5">Graph topology · live node state (dashed = conditional edge)</div>
+                <div className="rounded-2xl border border-line/80 bg-ink-950/60 p-3">
                   <GraphDiagram nodes={run.nodes} status={run.status} />
                 </div>
               </div>
               <div className="grid gap-5 lg:grid-cols-2">
                 <div>
-                  <div className="label mb-2">Node order & timings · overlapping bars = parallel execution</div>
+                  <div className="eyebrow mb-2.5">Node order & timings · overlapping bars = parallel execution</div>
                   <Timeline nodes={run.nodes} now={run.elapsed} />
                 </div>
                 <div>
-                  <div className="label mb-2">Raw tool calls</div>
+                  <div className="eyebrow mb-2.5">Raw tool calls</div>
                   {run.tools.length === 0 ? (
                     <Empty>Tool calls (yfinance, Google News RSS, citation checks, paper broker) are logged here.</Empty>
                   ) : (
                     <ul className="max-h-[340px] space-y-1 overflow-y-auto pr-1">
                       {run.tools.map((c, i) => (
-                        <li key={i} className="rounded border border-line bg-ink-850">
+                        <li key={i} className="rounded-xl border border-line/80 bg-ink-950/50 transition-colors hover:border-gold/25">
                           <details>
                             <summary className="flex cursor-pointer items-center gap-2 px-2 py-1 font-mono text-[10.5px]">
                               <span className="tabular w-12 text-dim">{c.t.toFixed(2)}s</span>
                               <span className="w-20 truncate text-muted">{c.agent}</span>
-                              <span className="flex-1 truncate text-amber">{c.tool}()</span>
+                              <span className="flex-1 truncate text-gold">{c.tool}()</span>
                               <span className="tabular text-dim">{c.ms}ms</span>
                             </summary>
                             <pre className="max-h-56 overflow-auto border-t border-line px-2 py-1.5 font-mono text-[10px] leading-relaxed whitespace-pre-wrap text-muted">
@@ -234,7 +239,7 @@ export function AgentTrace({ run }: { run: RunState }) {
               </div>
               {run.notices.length > 0 && (
                 <div>
-                  <div className="label mb-1">Run notices</div>
+                  <div className="eyebrow mb-1.5">Run notices</div>
                   <ul className="space-y-0.5 font-mono text-[10.5px]">
                     {run.notices.map((n, i) => (
                       <li key={i} className={n.level === 'error' ? 'text-down' : n.level === 'warn' ? 'text-warn' : 'text-muted'}>
@@ -244,14 +249,13 @@ export function AgentTrace({ run }: { run: RunState }) {
                   </ul>
                 </div>
               )}
-              <details className="rounded border border-line">
+              <details className="rounded-xl border border-line/80">
                 <summary className="cursor-pointer px-2 py-1 font-mono text-[10.5px] text-muted">Mermaid source (generated by LangGraph `get_graph().draw_mermaid()`)</summary>
                 <pre className="overflow-auto border-t border-line p-2 font-mono text-[10px] text-dim">{mermaid ?? 'loading…'}</pre>
               </details>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      </div>
     </section>
   )
 }

@@ -18,15 +18,15 @@ export const compactNum = (v: number | null | undefined) => (v == null ? '—' :
 export const tone = (v: number | null | undefined) => (v == null || v === 0 ? 'text-muted' : v > 0 ? 'text-up' : 'text-down')
 
 export const decisionColor = (d?: string | null) =>
-  d === 'BUY' ? 'var(--color-up)' : d === 'SELL' ? 'var(--color-down)' : 'var(--color-amber)'
+  d === 'BUY' ? 'var(--color-up)' : d === 'SELL' ? 'var(--color-down)' : 'var(--color-gold)'
 
 export const leanColor = (lean: string) =>
   lean === 'bullish' ? 'text-up' : lean === 'bearish' ? 'text-down' : 'text-dim'
 
 export const sourceColor: Record<string, string> = {
-  T: 'text-info border-info/40 bg-info/10',
-  N: 'text-violet border-violet/40 bg-violet/10',
-  F: 'text-amber border-amber/40 bg-amber/10',
+  T: 'text-info border-info/35 bg-info/10',
+  N: 'text-violet border-violet/35 bg-violet/10',
+  F: 'text-gold border-gold/35 bg-gold/10',
 }
 
 export function fmtDate(iso?: string | null) {

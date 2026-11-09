@@ -1,6 +1,6 @@
 # QUORUM — AI Trading Floor
 
-> **Agents debate, then reach a group decision.** QUORUM is a multi-agent stock research assistant for Indian (NSE) stocks. Type a ticker and seven AI agents analyse it live on a Bloomberg-style "trading floor". The Bull and Bear argue over the evidence, a Risk Manager audits their arguments, and a Portfolio Manager decides **BUY / HOLD / SELL** and places a paper trade in a virtual ₹1,00,000 portfolio.
+> **Agents debate, then reach a group decision.** QUORUM is a multi-agent stock research assistant for Indian (NSE) stocks. Type a ticker and seven AI agents analyse it live on a "trading floor" designed as a royal council chamber. The Bull and Bear argue over the evidence, a Risk Manager audits their arguments, and a Portfolio Manager decides **BUY / HOLD / SELL** and places a paper trade in a virtual ₹1,00,000 portfolio.
 
 > [!WARNING]
 > **Educational simulation, not financial advice.** QUORUM is a college mini-project for a Generative AI & Agentic AI course. Its decisions come from language models and simple rules applied to public data. It trades a *virtual* portfolio only and must never be used for real investment decisions.
@@ -32,6 +32,8 @@
 | **Evaluation** | One click evaluates 10 tickers: agent decisions vs **buy & hold**, an **RSI rule** (buy < 30, sell > 70) and **random**, scored on forward returns over N trading days. Only dates **after `LLM_KNOWLEDGE_CUTOFF`** are allowed, and the page explains why. |
 
 Every agent's reasoning is **streamed token by token over Server-Sent Events**, so nothing happens off-screen.
+
+**Design.** The UI uses a "royal council" design system: a midnight-amethyst canvas with a slow aurora, champagne-gold hairlines and ivory type set in Cormorant Garamond, Manrope and DM Mono. Signals use jewel tones: emerald for BUY, ruby for SELL, topaz for HOLD and risk, sapphire and amethyst for data sources. Agents sit in glass "council seat" cards with jewel medallions, and a spinning gold aura marks every agent that is thinking. The debate runs in a chamber with Roman-numeral rounds. The verdict is stamped as a wax seal with a rotating inscription. Buttons are gold-leaf with a magnetic hover and a sheen. Entrance motion is pure CSS, so it stays smooth, never leaves content invisible in a background tab, and respects `prefers-reduced-motion`.
 
 ## Screenshots
 

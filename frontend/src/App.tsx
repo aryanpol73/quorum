@@ -1,3 +1,4 @@
+import { MotionConfig } from 'framer-motion'
 import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { Footer, Header, type Route } from './components/Header'
 import { ToastProvider, useToast } from './components/Toasts'
@@ -147,15 +148,22 @@ function Shell() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <div className="royal-canvas" aria-hidden>
+        <span className="orb orb-a" />
+        <span className="orb orb-b" />
+        <span className="orb orb-c" />
+      </div>
       <Header route={route} health={health} healthError={healthError} />
-      <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-4">
-        {route === 'floor' && (
-          <TradingFloor run={run} chart={chart} chartLoading={chartLoading} onRun={startRun} onPreview={loadChart} onStop={stopRun} />
-        )}
-        <Suspense fallback={<p className="p-8 text-center font-mono text-[12px] text-dim">loading…</p>}>
-          {route === 'portfolio' && <Portfolio />}
-          {route === 'evaluation' && <Evaluation />}
-        </Suspense>
+      <main className="mx-auto w-full max-w-[1560px] flex-1 px-5 py-6">
+        <div key={route} className="rise">
+            {route === 'floor' && (
+              <TradingFloor run={run} chart={chart} chartLoading={chartLoading} onRun={startRun} onPreview={loadChart} onStop={stopRun} />
+            )}
+            <Suspense fallback={<p className="title-serif p-12 text-center text-[20px] text-dim italic">Opening the chamber…</p>}>
+              {route === 'portfolio' && <Portfolio />}
+              {route === 'evaluation' && <Evaluation />}
+            </Suspense>
+        </div>
       </main>
       <Footer />
     </div>
@@ -164,8 +172,10 @@ function Shell() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <Shell />
-    </ToastProvider>
+    <MotionConfig reducedMotion="user">
+      <ToastProvider>
+        <Shell />
+      </ToastProvider>
+    </MotionConfig>
   )
 }

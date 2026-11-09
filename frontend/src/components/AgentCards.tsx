@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Activity, Briefcase, CircleCheck, Landmark, Newspaper, ShieldAlert, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react'
+import { Activity, Briefcase, CircleCheck, Landmark, Newspaper, ShieldHalf, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { num, pct, rupee, signed, tone } from '../lib/format'
 import type {
@@ -15,34 +15,45 @@ import type {
   Verdict,
 } from '../types'
 import { CitedText } from './Citations'
-import { Bar, Chip, LlmBadge } from './ui'
+import { Bar, Chip, LlmBadge, Medallion, roman, useSpotlight } from './ui'
 
-const META: Record<AgentKey, { title: string; role: string; icon: ReactNode; accent: string }> = {
-  market: { title: 'Market Data', role: 'yfinance · RSI · SMA · MACD', icon: <Activity size={15} />, accent: 'text-info' },
-  news: { title: 'News Analyst', role: 'Google News RSS · sentiment', icon: <Newspaper size={15} />, accent: 'text-violet' },
-  fundamentals: { title: 'Fundamentals', role: 'P/E · P/B · D/E · growth', icon: <Landmark size={15} />, accent: 'text-amber' },
-  bull: { title: 'Bull', role: 'argues the long case', icon: <TrendingUp size={15} />, accent: 'text-up' },
-  bear: { title: 'Bear', role: 'argues the short case', icon: <TrendingDown size={15} />, accent: 'text-down' },
-  risk: { title: 'Risk Manager', role: 'reflection · position cap', icon: <ShieldAlert size={15} />, accent: 'text-warn' },
-  pm: { title: 'Portfolio Manager', role: 'final call · strict JSON', icon: <Briefcase size={15} />, accent: 'text-fg' },
+const META: Record<AgentKey, { title: string; role: string; icon: ReactNode; color: string }> = {
+  market: { title: 'Market Data', role: 'yfinance · RSI · SMA · MACD', icon: <Activity size={16} />, color: 'var(--color-info)' },
+  news: { title: 'News Analyst', role: 'Google News · headline sentiment', icon: <Newspaper size={16} />, color: 'var(--color-violet)' },
+  fundamentals: { title: 'Fundamentals', role: 'P/E · P/B · leverage · growth', icon: <Landmark size={16} />, color: 'var(--color-gold)' },
+  bull: { title: 'The Bull', role: 'argues for buying', icon: <TrendingUp size={16} />, color: 'var(--color-up)' },
+  bear: { title: 'The Bear', role: 'argues against buying', icon: <TrendingDown size={16} />, color: 'var(--color-down)' },
+  risk: { title: 'Risk Manager', role: 'reflection · position cap', icon: <ShieldHalf size={16} />, color: 'var(--color-warn)' },
+  pm: { title: 'Portfolio Manager', role: 'final decision · strict JSON', icon: <Briefcase size={16} />, color: 'var(--color-gold-bright)' },
 }
 
-function StatusPill({ status, round, rounds }: { status: AgentState['status']; round?: number; rounds?: number }) {
-  const map: Record<AgentState['status'], string> = {
-    idle: 'border-line text-dim',
-    thinking: 'border-amber/60 bg-amber/10 text-amber',
-    waiting: 'border-info/40 bg-info/5 text-info',
-    done: 'border-up/40 bg-up/10 text-up',
-    error: 'border-down/60 bg-down/10 text-down',
-    skipped: 'border-line text-dim',
+function StatusPill({ status, round }: { status: AgentState['status']; round?: number }) {
+  const cfg: Record<AgentState['status'], { cls: string; label: string; icon?: ReactNode }> = {
+    idle: { cls: 'border-line-strong text-dim', label: 'Idle' },
+    thinking: {
+      cls: 'border-gold/50 bg-gold/10 text-gold-bright',
+      label: round ? `Round ${roman(round)}` : 'Thinking',
+      icon: (
+        <span className="dots">
+          <i />
+          <i />
+          <i />
+        </span>
+      ),
+    },
+    waiting: { cls: 'border-info/35 bg-info/[0.07] text-info', label: round ? `Round ${roman(round)} done` : 'Waiting' },
+    done: { cls: 'border-up/35 bg-up/10 text-up', label: 'Done', icon: <CircleCheck size={11} /> },
+    error: { cls: 'border-down/45 bg-down/10 text-down', label: 'Error', icon: <TriangleAlert size={11} /> },
+    skipped: { cls: 'border-line-strong text-dim', label: 'Skipped' },
   }
-  const label = status === 'thinking' && round ? `R${round}/${rounds ?? 3} speaking` : status === 'waiting' && round ? `R${round} done · waiting` : status
+  const c = cfg[status]
   return (
-    <span className={`flex items-center gap-1.5 rounded border px-1.5 py-px font-mono text-[10px] tracking-wider uppercase ${map[status]}`}>
-      {status === 'thinking' && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber" />}
-      {status === 'done' && <CircleCheck size={11} />}
-      {status === 'error' && <TriangleAlert size={11} />}
-      {label}
+    <span
+      key={status + (round ?? '')}
+      className={`fade-in flex items-center gap-1.5 rounded-full border px-2.5 py-[3px] text-[10px] font-bold tracking-[0.12em] uppercase ${c.cls}`}
+    >
+      {c.icon}
+      {c.label}
     </span>
   )
 }
@@ -50,14 +61,43 @@ function StatusPill({ status, round, rounds }: { status: AgentState['status']; r
 function RawStream({ text }: { text: string }) {
   const tail = text.length > 420 ? '…' + text.slice(-420) : text
   return (
-    <pre className="caret font-mono text-[10.5px] leading-relaxed break-all whitespace-pre-wrap text-muted/80">{tail || ' '}</pre>
+    <div className="relative">
+      <div className="label mb-1.5 flex items-center gap-1.5 text-gold/70">
+        <span className="h-1 w-1 animate-pulse rounded-full bg-gold" /> structured output streaming
+      </div>
+      <pre className="caret font-mono text-[10.5px] leading-relaxed break-all whitespace-pre-wrap text-muted/80">{tail || ' '}</pre>
+    </div>
   )
 }
 
 function Waiting({ status, message }: { status: AgentState['status']; message?: string }) {
-  if (status === 'skipped') return <p className="text-[12px] text-dim">{message ?? 'Skipped for this run.'}</p>
-  if (status === 'error') return <p className="text-[12px] text-down">{message ?? 'Agent failed; the pipeline continued without it.'}</p>
-  return <p className="font-mono text-[11px] text-dim">{status === 'thinking' ? 'calling tools…' : 'idle — awaiting the quorum'}</p>
+  if (status === 'skipped') return <p className="text-[12.5px] leading-relaxed text-dim">{message ?? 'Skipped for this run.'}</p>
+  if (status === 'error') return <p className="text-[12.5px] text-down">{message ?? 'This agent failed; the council continued without it.'}</p>
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
+      {status === 'thinking' ? (
+        <>
+          <span className="dots text-gold">
+            <i />
+            <i />
+            <i />
+          </span>
+          <p className="text-[12px] text-muted">Calling tools…</p>
+        </>
+      ) : (
+        <p className="font-serif text-[15px] text-dim italic">Awaiting the council</p>
+      )}
+    </div>
+  )
+}
+
+function KV({ k, v, cls = 'text-fg' }: { k: string; v: ReactNode; cls?: string }) {
+  return (
+    <div className="rounded-lg border border-line/70 bg-ink-950/40 px-2 py-1.5">
+      <div className="text-[9px] font-bold tracking-[0.14em] text-dim uppercase">{k}</div>
+      <div className={`tabular mt-0.5 text-[12.5px] ${cls}`}>{v}</div>
+    </div>
+  )
 }
 
 // ---------------------------------------------------------------- bodies
@@ -67,34 +107,25 @@ function MarketBody({ a }: { a: AgentState }) {
   if (!ind) return <Waiting status={a.status} message={a.message} />
   const rsiTone = ind.rsi14 == null ? '' : ind.rsi14 >= 70 ? 'text-down' : ind.rsi14 <= 30 ? 'text-up' : 'text-fg'
   return (
-    <div className="space-y-2.5">
-      <div className="grid grid-cols-3 gap-x-3 gap-y-1.5 font-mono text-[11px]">
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-1.5">
         <KV k="RSI 14" v={num(ind.rsi14, 1)} cls={rsiTone} />
-        <KV k="MACD H" v={signed(ind.macd_hist)} cls={tone(ind.macd_hist)} />
-        <KV k="VOL ×" v={num(ind.volume_spike_ratio)} cls={(ind.volume_spike_ratio ?? 0) >= 1.5 ? 'text-amber' : 'text-fg'} />
-        <KV k="vs 52W H" v={pct(ind.pct_from_52w_high, 1)} cls={tone(ind.pct_from_52w_high)} />
-        <KV k="6M RET" v={pct(ind.return_6m_pct, 1)} cls={tone(ind.return_6m_pct)} />
-        <KV k="σ ANN" v={`${num(ind.volatility_ann_pct, 1)}%`} />
+        <KV k="MACD hist" v={signed(ind.macd_hist)} cls={tone(ind.macd_hist)} />
+        <KV k="Volume ×" v={num(ind.volume_spike_ratio)} cls={(ind.volume_spike_ratio ?? 0) >= 1.5 ? 'text-gold' : 'text-fg'} />
+        <KV k="vs 52w high" v={pct(ind.pct_from_52w_high, 1)} cls={tone(ind.pct_from_52w_high)} />
+        <KV k="6m return" v={pct(ind.return_6m_pct, 1)} cls={tone(ind.return_6m_pct)} />
+        <KV k="Volatility" v={`${num(ind.volatility_ann_pct, 1)}%`} />
       </div>
-      <p className={`text-[12.5px] leading-relaxed text-fg/90 ${a.status === 'thinking' ? 'caret' : ''}`}>{out?.interpretation ?? a.text}</p>
-    </div>
-  )
-}
-
-function KV({ k, v, cls = 'text-fg' }: { k: string; v: ReactNode; cls?: string }) {
-  return (
-    <div className="flex items-baseline justify-between gap-1 border-b border-line/60 pb-0.5">
-      <span className="text-[9.5px] tracking-wider text-dim">{k}</span>
-      <span className={`tabular ${cls}`}>{v}</span>
+      <p className={`text-[13px] leading-relaxed text-fg/90 ${a.status === 'thinking' ? 'caret' : ''}`}>{out?.interpretation ?? a.text}</p>
     </div>
   )
 }
 
 function scoreCls(s?: number) {
   if (s == null) return 'border-line text-dim'
-  if (s >= 0.15) return 'border-up/40 bg-up/10 text-up'
-  if (s <= -0.15) return 'border-down/40 bg-down/10 text-down'
-  return 'border-line text-muted'
+  if (s >= 0.15) return 'border-up/35 bg-up/10 text-up'
+  if (s <= -0.15) return 'border-down/35 bg-down/10 text-down'
+  return 'border-line-strong text-muted'
 }
 
 function NewsBody({ a }: { a: AgentState }) {
@@ -104,35 +135,43 @@ function NewsBody({ a }: { a: AgentState }) {
     if (!heads.length) return <Waiting status={a.status} message={a.message} />
     return (
       <div className="space-y-2">
-        <div className="label">{heads.length} headlines fetched · scoring</div>
+        <div className="text-[12px] text-muted">{heads.length} headlines gathered · scoring each one</div>
         <RawStream text={a.text} />
       </div>
     )
   }
   const g = out.aggregate
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <span className="label">Sentiment</span>
-        <div className="relative h-1.5 flex-1 rounded-full bg-gradient-to-r from-down/60 via-ink-700 to-up/60">
+    <div className="space-y-3">
+      <div className="rounded-xl border border-line/70 bg-ink-950/40 px-3 py-2.5">
+        <div className="mb-2 flex items-baseline justify-between">
+          <span className="label">Aggregate sentiment</span>
+          <span className={`tabular text-[15px] ${tone(g.score)}`}>{signed(g.score)}</span>
+        </div>
+        <div className="relative h-[6px] rounded-full" style={{ background: 'linear-gradient(90deg, var(--color-down), rgba(120,110,160,0.35) 50%, var(--color-up))' }}>
           <span
-            className="absolute -top-1 h-3.5 w-1 rounded bg-fg shadow"
-            style={{ left: `calc(${((g.score + 1) / 2) * 100}% - 2px)` }}
-            aria-hidden
+            className="from-center absolute -top-[5px] h-4 w-4 rounded-full border-2 border-ink-950 bg-gold-bright shadow-[0_0_12px] shadow-gold transition-[left] duration-700"
+            style={{ left: `calc(${((g.score + 1) / 2) * 100}% - 8px)` }}
           />
         </div>
-        <span className={`tabular text-[12px] ${tone(g.score)}`}>{signed(g.score)}</span>
+        <div className="mt-1.5 flex justify-between text-[9.5px] font-semibold tracking-wider text-dim uppercase">
+          <span>bearish</span>
+          <span>
+            {g.positive} positive · {g.negative} negative
+          </span>
+          <span>bullish</span>
+        </div>
       </div>
-      <p className="text-[11.5px] leading-snug text-muted">{out.summary}</p>
-      <ul className="space-y-1">
+      <p className="text-[12px] leading-relaxed text-muted">{out.summary}</p>
+      <ul className="space-y-1.5">
         {out.headlines.map((h, i) => (
-          <li key={i} className="flex items-start gap-2 text-[11.5px] leading-snug">
-            <span className={`tabular mt-px shrink-0 rounded border px-1 text-[10px] ${scoreCls(h.score)}`}>{signed(h.score, 1)}</span>
+          <li key={i} className="rise-left flex items-start gap-2.5 text-[12px] leading-snug" style={{ animationDelay: `${i * 40}ms` }}>
+            <span className={`tabular mt-px shrink-0 rounded-md border px-1.5 text-[10.5px] ${scoreCls(h.score)}`}>{signed(h.score, 1)}</span>
             <span className="min-w-0">
-              <a href={h.link ?? undefined} target="_blank" rel="noreferrer" className="text-fg/90 hover:text-amber" title={h.reason}>
+              <a href={h.link ?? undefined} target="_blank" rel="noreferrer" className="text-fg/90 transition-colors hover:text-gold-bright" title={h.reason}>
                 {h.title}
               </a>
-              <span className="ml-1 text-[10px] text-dim">· {h.source}</span>
+              <span className="ml-1 text-[10.5px] text-dim">· {h.source}</span>
             </span>
           </li>
         ))}
@@ -144,10 +183,10 @@ function NewsBody({ a }: { a: AgentState }) {
 const FUND_ROWS: [string, string, (v: number | null) => string][] = [
   ['pe', 'P/E', (v) => num(v, 1)],
   ['pb', 'P/B', (v) => num(v, 2)],
-  ['debt_to_equity', 'D/E', (v) => (v == null ? '—' : `${num(v, 2)}x`)],
-  ['revenue_growth_pct', 'REV GR', (v) => pct(v, 1)],
-  ['profit_margin_pct', 'MARGIN', (v) => (v == null ? '—' : `${num(v, 1)}%`)],
-  ['market_cap_cr', 'MCAP ₹CR', (v) => (v == null ? '—' : new Intl.NumberFormat('en-IN').format(v))],
+  ['debt_to_equity', 'Debt/Eq', (v) => (v == null ? '—' : `${num(v, 2)}x`)],
+  ['revenue_growth_pct', 'Rev growth', (v) => pct(v, 1)],
+  ['profit_margin_pct', 'Margin', (v) => (v == null ? '—' : `${num(v, 1)}%`)],
+  ['market_cap_cr', 'Mcap ₹cr', (v) => (v == null ? '—' : new Intl.NumberFormat('en-IN').format(v))],
 ]
 
 function FundamentalsBody({ a }: { a: AgentState }) {
@@ -155,26 +194,29 @@ function FundamentalsBody({ a }: { a: AgentState }) {
   const metrics = (out?.metrics ?? (a.data?.metrics as Record<string, number | null> | undefined)) ?? null
   if (!metrics) return <Waiting status={a.status} message={a.message} />
   const v = out?.judgement?.valuation
-  const vCls = v === 'cheap' ? 'border-up/50 bg-up/10 text-up' : v === 'expensive' ? 'border-down/50 bg-down/10 text-down' : 'border-amber/50 bg-amber/10 text-amber'
+  const vCls = v === 'cheap' ? 'border-up/40 bg-up/10 text-up' : v === 'expensive' ? 'border-down/40 bg-down/10 text-down' : 'border-gold/40 bg-gold/10 text-gold'
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-3 gap-x-3 gap-y-1.5 font-mono text-[11px]">
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-1.5">
         {FUND_ROWS.map(([key, label, fmt]) => (
           <KV key={key} k={label} v={fmt(metrics[key] ?? null)} cls={metrics[key] == null ? 'text-dim' : 'text-fg'} />
         ))}
       </div>
       {out ? (
         <>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Chip className={vCls}>{v}</Chip>
-            <span className="text-[11.5px] text-muted">{out.judgement.summary}</span>
+            <span className="text-[12px] text-muted">{out.judgement.summary}</span>
           </div>
-          <ul className="list-disc space-y-0.5 pl-4 text-[11.5px] leading-snug text-fg/85 marker:text-dim">
+          <ul className="space-y-1 text-[12px] leading-snug text-fg/85">
             {out.judgement.reasons.map((r, i) => (
-              <li key={i}>{r}</li>
+              <li key={i} className="flex gap-2">
+                <span className="mt-[6px] h-1 w-1 shrink-0 rotate-45 bg-gold/70" />
+                {r}
+              </li>
             ))}
           </ul>
-          {out.missing.length > 0 && <p className="text-[10.5px] text-dim">Missing: {out.missing.join(', ')}</p>}
+          {out.missing.length > 0 && <p className="text-[11px] text-dim">Missing: {out.missing.join(', ')}</p>}
         </>
       ) : (
         <RawStream text={a.text} />
@@ -189,23 +231,36 @@ function DebaterBody({ a, side, run }: { a: AgentState; side: 'bull' | 'bear'; r
   if (!turns.length) return <Waiting status={a.status} message={a.message} />
   const last = turns[turns.length - 1]
   const cites = new Set(turns.flatMap((t) => t.citations))
+  const color = side === 'bull' ? 'var(--color-up)' : 'var(--color-down)'
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-1.5">
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
         {Array.from({ length: rounds }, (_, i) => {
           const t = turns[i]
           return (
-            <span
-              key={i}
-              className={`h-1.5 flex-1 rounded-full ${t ? (t.streaming ? 'animate-pulse bg-amber' : side === 'bull' ? 'bg-up' : 'bg-down') : 'bg-ink-700'}`}
-            />
+            <div key={i} className="flex flex-1 items-center gap-1.5">
+              <span
+                className={`h-2.5 w-2.5 rotate-45 rounded-[2px] border transition-all duration-500 ${t?.streaming ? 'animate-pulse' : ''}`}
+                style={{
+                  borderColor: t ? color : 'var(--color-line-strong)',
+                  background: t && !t.streaming ? color : 'transparent',
+                  boxShadow: t ? `0 0 10px -2px ${color}` : undefined,
+                }}
+              />
+              <span className="font-serif text-[12px] text-dim italic">{roman(i + 1)}</span>
+              {i < rounds - 1 && <span className="h-px flex-1 bg-line-strong" />}
+            </div>
           )
         })}
       </div>
-      <p className={`text-[12px] leading-relaxed text-fg/90 ${last.streaming ? 'caret' : ''}`}>
+      <p className={`text-[13px] leading-relaxed text-fg/90 ${last.streaming ? 'caret' : ''}`}>
         <CitedText text={last.text} invalid={last.invalid_citations} />
       </p>
-      {!last.streaming && <p className="font-mono text-[10px] text-dim">{turns.length} argument(s) · {cites.size} distinct evidence cited</p>}
+      {!last.streaming && (
+        <p className="text-[11px] text-dim">
+          {turns.length} argument{turns.length > 1 ? 's' : ''} · {cites.size} pieces of evidence cited
+        </p>
+      )}
     </div>
   )
 }
@@ -215,25 +270,27 @@ function RiskBody({ a }: { a: AgentState }) {
   if (!out) return a.status === 'thinking' ? <RawStream text={a.text} /> : <Waiting status={a.status} message={a.message} />
   const sev = (s: string) => out.flags.filter((f) => f.severity === s).length
   return (
-    <div className="space-y-2.5">
-      <div>
-        <div className="mb-1 flex items-baseline justify-between">
+    <div className="space-y-3">
+      <div className="rounded-xl border border-line/70 bg-ink-950/40 px-3 py-2.5">
+        <div className="mb-2 flex items-baseline justify-between">
           <span className="label">Max position</span>
-          <span className="tabular text-[15px] text-warn">{num(out.max_position_pct, 1)}%</span>
+          <span className="tabular text-[20px] text-warn">{num(out.max_position_pct, 1)}%</span>
         </div>
         <Bar value={out.max_position_pct} max={20} color="var(--color-warn)" />
-        <div className="mt-1 flex justify-between font-mono text-[10px] text-dim">
-          <span>σ {num(out.volatility_ann_pct, 1)}% → vol cap {num(out.volatility_cap_pct, 1)}%</span>
-          <span>20% hard limit</span>
+        <div className="mt-1.5 flex justify-between text-[10.5px] text-dim">
+          <span className="tabular">
+            σ {num(out.volatility_ann_pct, 1)}% → cap {num(out.volatility_cap_pct, 1)}%
+          </span>
+          <span>20% ceiling</span>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
-        <Chip className="border-line text-muted">risk {out.risk_level}</Chip>
-        <Chip className={sev('high') ? 'border-down/50 text-down' : 'border-line text-dim'}>{sev('high')} high</Chip>
-        <Chip className={sev('medium') ? 'border-warn/50 text-warn' : 'border-line text-dim'}>{sev('medium')} med</Chip>
+        <Chip className="border-line-strong text-muted">{out.risk_level} risk</Chip>
+        <Chip className={sev('high') ? 'border-down/45 text-down' : 'border-line text-dim'}>{sev('high')} high</Chip>
+        <Chip className={sev('medium') ? 'border-warn/45 text-warn' : 'border-line text-dim'}>{sev('medium')} medium</Chip>
         <Chip className={sev('low') ? 'border-info/40 text-info' : 'border-line text-dim'}>{sev('low')} low</Chip>
       </div>
-      <p className="text-[11.5px] leading-snug text-muted">{out.notes}</p>
+      <p className="text-[12px] leading-relaxed text-muted">{out.notes}</p>
     </div>
   )
 }
@@ -241,26 +298,29 @@ function RiskBody({ a }: { a: AgentState }) {
 function PMBody({ a }: { a: AgentState }) {
   const out = a.output as Verdict | undefined
   if (!out) return a.status === 'thinking' ? <RawStream text={a.text} /> : <Waiting status={a.status} message={a.message} />
-  const c = out.decision === 'BUY' ? 'text-up' : out.decision === 'SELL' ? 'text-down' : 'text-amber'
+  const c = out.decision === 'BUY' ? 'text-up' : out.decision === 'SELL' ? 'text-down' : 'text-gold'
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-baseline gap-3">
-        <span className={`font-mono text-2xl font-bold tracking-widest ${c}`}>{out.decision}</span>
-        <span className="tabular text-[12px] text-muted">conf {out.confidence} · size {num(out.position_size_pct, 1)}%</span>
+        <span className={`font-serif text-[34px] leading-none font-bold tracking-[0.12em] ${c}`}>{out.decision}</span>
+        <span className="tabular text-[12px] text-muted">
+          conf {out.confidence} · size {num(out.position_size_pct, 1)}%
+        </span>
       </div>
-      <p className="text-[11.5px] leading-snug text-fg/85">
+      <p className="text-[12.5px] leading-relaxed text-fg/85">
         <CitedText text={out.rationale[0]} />
       </p>
-      <p className="font-mono text-[10px] text-dim">Validated against Pydantic schema · @ {rupee(out.price)}</p>
+      <p className="text-[11px] text-dim">Schema-validated decision · priced at {rupee(out.price)}</p>
     </div>
   )
 }
 
 // ---------------------------------------------------------------- card
-export function AgentCard({ k, run, children }: { k: AgentKey; run: RunState; children?: ReactNode }) {
+export function AgentCard({ k, run, index = 0, children }: { k: AgentKey; run: RunState; index?: number; children?: ReactNode }) {
   const a = run.agents[k]
   const m = META[k]
   const thinking = a.status === 'thinking'
+  const spot = useSpotlight()
   const dur =
     a.startedAt != null
       ? a.endedAt != null && a.status !== 'thinking'
@@ -271,65 +331,78 @@ export function AgentCard({ k, run, children }: { k: AgentKey; run: RunState; ch
       : null
   return (
     <motion.article
-      layout="position"
-      className={`panel flex h-[300px] flex-col overflow-hidden transition-colors ${
-        thinking ? 'animate-pulse-ring border-amber/70' : a.status === 'done' ? 'border-line-strong' : ''
-      }`}
+      whileHover={{ y: -3 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+      onMouseMove={spot}
+      className={`panel spotlight rise flex h-[330px] flex-col ${thinking ? 'aura' : ''}`}
+      style={{
+        animationDelay: `${index * 60}ms`,
+        ...(a.status === 'done' ? { borderColor: `color-mix(in srgb, ${m.color} 28%, var(--color-line))` } : {}),
+      }}
     >
-      <header className="flex items-center gap-2 border-b border-line px-3 py-2">
-        <span className={m.accent}>{m.icon}</span>
+      <span className="spot" />
+      <header className="relative flex items-center gap-3 px-4 pt-4 pb-3">
+        <Medallion color={m.color} active={thinking || a.status === 'done'}>
+          {m.icon}
+        </Medallion>
         <div className="min-w-0 leading-tight">
-          <h3 className="truncate font-mono text-[12px] font-semibold tracking-wider text-fg uppercase">{m.title}</h3>
-          <p className="truncate text-[10px] text-dim">{m.role}</p>
+          <h3 className="title-serif truncate text-[19px]">{m.title}</h3>
+          <p className="truncate text-[11px] text-dim">{m.role}</p>
         </div>
         <div className="ml-auto">
-          <StatusPill status={a.status} round={a.round} rounds={run.meta?.rounds} />
+          <StatusPill status={a.status} round={a.status === 'thinking' || a.status === 'waiting' ? a.round : undefined} />
         </div>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5">{children}</div>
-      <footer className="flex items-center gap-2 border-t border-line px-3 py-1.5 font-mono text-[10px] text-dim">
+      <div className="mx-4 hairline opacity-60" />
+      <div className="relative min-h-0 flex-1 overflow-y-auto px-4 py-3">{children}</div>
+      <footer className="relative flex items-center gap-2 border-t border-line/70 px-4 py-2 text-[10.5px] text-dim">
         <LlmBadge llm={a.llm} />
-        <span className="ml-auto tabular">{dur != null ? `${dur.toFixed(1)}s` : '—'}</span>
+        <span className="tabular ml-auto">{dur != null ? `${dur.toFixed(1)}s` : '—'}</span>
       </footer>
     </motion.article>
   )
 }
 
+function StageHeader({ n, title, sub }: { n: number; title: string; sub: string }) {
+  return (
+    <div className="flex items-center gap-3 pt-1">
+      <span className="grid h-9 w-9 place-items-center rounded-full border border-gold/35 bg-gold/[0.07] font-serif text-[16px] font-semibold text-gold">{roman(n)}</span>
+      <div className="leading-tight">
+        <div className="title-serif text-[22px]">{title}</div>
+        <div className="text-[11.5px] text-dim">{sub}</div>
+      </div>
+      <span className="hairline ml-2 flex-1" />
+    </div>
+  )
+}
+
 export function AgentGrid({ run }: { run: RunState }) {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="label text-amber">Stage 1 · Analysts</span>
-        <span className="font-mono text-[10px] text-dim">run in parallel (LangGraph fan-out)</span>
-        <span className="h-px flex-1 bg-line" />
-      </div>
-      <div className="grid gap-3 md:grid-cols-3">
-        <AgentCard k="market" run={run}>
+    <div className="space-y-4">
+      <StageHeader n={1} title="The Analysts" sub="Three agents gather evidence at the same time — LangGraph fan-out" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <AgentCard k="market" run={run} index={0}>
           <MarketBody a={run.agents.market} />
         </AgentCard>
-        <AgentCard k="news" run={run}>
+        <AgentCard k="news" run={run} index={1}>
           <NewsBody a={run.agents.news} />
         </AgentCard>
-        <AgentCard k="fundamentals" run={run}>
+        <AgentCard k="fundamentals" run={run} index={2}>
           <FundamentalsBody a={run.agents.fundamentals} />
         </AgentCard>
       </div>
-      <div className="flex items-center gap-2 pt-1">
-        <span className="label text-amber">Stage 2 · Debate, reflection, decision</span>
-        <span className="font-mono text-[10px] text-dim">evidence-only arguments · risk review · strict JSON verdict</span>
-        <span className="h-px flex-1 bg-line" />
-      </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <AgentCard k="bull" run={run}>
+      <StageHeader n={2} title="Debate, Reflection & Decision" sub="Evidence-only arguments · a risk review of every claim · a schema-validated verdict" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AgentCard k="bull" run={run} index={3}>
           <DebaterBody a={run.agents.bull} side="bull" run={run} />
         </AgentCard>
-        <AgentCard k="bear" run={run}>
+        <AgentCard k="bear" run={run} index={4}>
           <DebaterBody a={run.agents.bear} side="bear" run={run} />
         </AgentCard>
-        <AgentCard k="risk" run={run}>
+        <AgentCard k="risk" run={run} index={5}>
           <RiskBody a={run.agents.risk} />
         </AgentCard>
-        <AgentCard k="pm" run={run}>
+        <AgentCard k="pm" run={run} index={6}>
           <PMBody a={run.agents.pm} />
         </AgentCard>
       </div>

@@ -27,19 +27,19 @@ export function CitationChip({ id, invalid = false }: { id: string; invalid?: bo
       <span
         onMouseEnter={() => setHovered(id)}
         onMouseLeave={() => setHovered(null)}
-        className={`mx-0.5 cursor-help rounded border px-1 font-mono text-[10px] leading-4 ${cls} ${hovered === id ? 'ring-1 ring-current' : ''}`}
+        className={`mx-0.5 cursor-help rounded-md border px-1.5 py-px font-mono text-[10px] leading-4 transition-all duration-200 ${cls} ${hovered === id ? 'ring-1 ring-current shadow-[0_0_12px_-2px_currentColor]' : ''}`}
       >
         {id}
       </span>
       <span
         role="tooltip"
-        className="pointer-events-none invisible absolute bottom-full left-1/2 z-40 mb-1.5 w-72 -translate-x-1/2 rounded-md border border-line-strong bg-ink-800 p-2 text-left text-[11px] leading-snug text-fg opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100"
+        className="pointer-events-none invisible absolute bottom-full left-1/2 z-40 mb-2 w-72 -translate-x-1/2 translate-y-1 rounded-xl border border-gold/25 bg-ink-850/95 p-3 text-left text-[12px] leading-snug text-fg opacity-0 shadow-[0_24px_50px_-20px_rgba(0,0,0,0.95)] backdrop-blur-xl transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
       >
         {bad ? (
           <span className="text-down">Evidence {id} does not exist in the ledger (possible hallucination).</span>
         ) : ev ? (
           <>
-            <span className="label block">
+            <span className="eyebrow mb-1 block">
               {ev.id} · {ev.source} · leans {ev.lean}
             </span>
             {ev.detail}

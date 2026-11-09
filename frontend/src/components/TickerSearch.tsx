@@ -1,6 +1,8 @@
-import { LoaderCircle, Play, Search, Square } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Crown, Search, Square } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { TICKERS } from '../data/tickers'
+import { EASE, Magnetic, RoyalButton } from './ui'
 
 interface Props {
   running: boolean
@@ -10,9 +12,12 @@ interface Props {
   initial?: string
 }
 
+const QUICK = ['INFY', 'TATAMOTORS', 'RELIANCE', 'TCS', 'HDFCBANK', 'ITC']
+
 export function TickerSearch({ running, onSubmit, onPreview, onStop, initial = '' }: Props) {
   const [query, setQuery] = useState(initial)
   const [open, setOpen] = useState(false)
+  const [focused, setFocused] = useState(false)
   const [active, setActive] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -34,7 +39,6 @@ export function TickerSearch({ running, onSubmit, onPreview, onStop, initial = '
   }, [])
 
   useEffect(() => {
-    // "/" focuses the command line, terminal-style
     const onKey = (e: KeyboardEvent) => {
       if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
         e.preventDefault()
@@ -77,77 +81,123 @@ export function TickerSearch({ running, onSubmit, onPreview, onStop, initial = '
   }
 
   return (
-    <div className="flex flex-wrap items-stretch gap-2">
-      <div ref={boxRef} className="relative min-w-[260px] flex-1">
-        <div className="flex h-11 items-center gap-2 rounded-md border border-line-strong bg-ink-900 px-3 focus-within:border-amber">
-          <span className="font-mono text-[13px] text-amber">&gt;</span>
-          <Search size={15} className="text-dim" aria-hidden />
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value.toUpperCase())
-              setOpen(true)
-              setActive(0)
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <div ref={boxRef} className="relative min-w-[280px] flex-1">
+          <motion.div
+            animate={{
+              boxShadow: focused
+                ? '0 0 0 1px rgba(220,183,108,0.55), 0 0 0 6px rgba(220,183,108,0.08), 0 18px 50px -24px rgba(220,183,108,0.45)'
+                : '0 0 0 1px rgba(220,183,108,0.16), 0 0 0 0 rgba(0,0,0,0), 0 18px 40px -30px rgba(0,0,0,0.8)',
             }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={onKeyDown}
-            placeholder="Enter NSE ticker — INFY, TATAMOTORS, RELIANCE…  (press / to focus)"
-            className="h-full flex-1 bg-transparent font-mono text-[14px] tracking-wide text-fg uppercase outline-none placeholder:text-dim placeholder:normal-case"
-            aria-label="NSE ticker"
-            role="combobox"
-            aria-expanded={open}
-            aria-controls="ticker-listbox"
-            aria-autocomplete="list"
-            spellCheck={false}
-            autoComplete="off"
-          />
-          <span className="hidden font-mono text-[10px] text-dim sm:inline">.NS</span>
-        </div>
-        {open && matches.length > 0 && (
-          <ul
-            id="ticker-listbox"
-            role="listbox"
-            className="absolute top-12 right-0 left-0 z-30 max-h-80 overflow-auto rounded-md border border-line-strong bg-ink-850 py-1 shadow-2xl"
+            transition={{ duration: 0.35, ease: EASE }}
+            className="flex h-[58px] items-center gap-3 rounded-2xl bg-ink-900/90 px-5"
           >
-            {matches.map((t, i) => (
-              <li
-                key={t.symbol}
-                role="option"
-                aria-selected={i === active}
-                onMouseEnter={() => setActive(i)}
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  choose(t.symbol)
-                }}
-                className={`flex cursor-pointer items-center gap-3 px-3 py-1.5 ${i === active ? 'bg-amber/10' : ''}`}
+            <Search size={18} className={`transition-colors duration-300 ${focused ? 'text-gold' : 'text-dim'}`} aria-hidden />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value.toUpperCase())
+                setOpen(true)
+                setActive(0)
+              }}
+              onFocus={() => {
+                setFocused(true)
+                setOpen(true)
+              }}
+              onBlur={() => setFocused(false)}
+              onKeyDown={onKeyDown}
+              placeholder="Search an NSE stock — INFY, TATAMOTORS, RELIANCE…"
+              className="h-full flex-1 bg-transparent font-mono text-[16px] tracking-[0.08em] text-fg uppercase outline-none placeholder:font-sans placeholder:tracking-normal placeholder:text-dim placeholder:normal-case"
+              aria-label="NSE ticker"
+              role="combobox"
+              aria-expanded={open}
+              aria-controls="ticker-listbox"
+              aria-autocomplete="list"
+              spellCheck={false}
+              autoComplete="off"
+            />
+            <kbd className="hidden rounded-md border border-line-strong px-1.5 py-0.5 font-mono text-[10px] text-dim sm:inline">/</kbd>
+          </motion.div>
+          <AnimatePresence>
+            {open && matches.length > 0 && (
+              <motion.ul
+                id="ticker-listbox"
+                role="listbox"
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.15 } }}
+                transition={{ duration: 0.25, ease: EASE }}
+                className="absolute top-[66px] right-0 left-0 z-30 max-h-[340px] origin-top overflow-auto rounded-2xl border border-gold/20 bg-ink-850/95 p-1.5 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.95)] backdrop-blur-xl"
               >
-                <span className={`w-28 font-mono text-[13px] ${i === active ? 'text-amber' : 'text-fg'}`}>{t.symbol}</span>
-                <span className="truncate text-[12px] text-muted">{t.name}</span>
-              </li>
-            ))}
-          </ul>
+                {matches.map((t, i) => (
+                  <li
+                    key={t.symbol}
+                    role="option"
+                    aria-selected={i === active}
+                    onMouseEnter={() => setActive(i)}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      choose(t.symbol)
+                    }}
+                    className="relative flex cursor-pointer items-center gap-4 rounded-xl px-3.5 py-2"
+                  >
+                    {i === active && (
+                      <motion.span
+                        layoutId="ticker-hl"
+                        className="absolute inset-0 rounded-xl border border-gold/25 bg-gold/[0.08]"
+                        transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                      />
+                    )}
+                    <span className={`relative w-28 font-mono text-[13.5px] tracking-wider ${i === active ? 'text-gold-bright' : 'text-fg'}`}>{t.symbol}</span>
+                    <span className="relative truncate text-[12.5px] text-muted">{t.name}</span>
+                  </li>
+                ))}
+              </motion.ul>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {running ? (
+          <Magnetic>
+            <button onClick={onStop} className="btn-session h-[58px] px-6 text-[13px] font-bold tracking-wide">
+              <span className="relative grid h-7 w-7 place-items-center">
+                <span className="absolute inset-0 animate-spin rounded-full border-2 border-down/25 border-t-down" />
+                <Square size={10} className="fill-current text-down" />
+              </span>
+              Council in session
+              <span className="text-[11px] font-semibold text-down/80">Stop</span>
+            </button>
+          </Magnetic>
+        ) : (
+          <RoyalButton onClick={() => submit()} disabled={!query.trim()} className="h-[58px] pr-7 pl-2.5 text-[13.5px]">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-ink-950/90 text-gold shadow-inner">
+              <Crown size={17} />
+            </span>
+            CONVENE THE COUNCIL
+          </RoyalButton>
         )}
       </div>
-      {running ? (
-        <button
-          onClick={onStop}
-          className="flex h-11 items-center gap-2 rounded-md border border-down/60 bg-down/10 px-5 font-mono text-[12px] tracking-widest text-down uppercase transition hover:bg-down/20"
-        >
-          <LoaderCircle size={15} className="animate-spin" />
-          In session
-          <Square size={12} className="ml-1 fill-current" aria-label="Stop" />
-        </button>
-      ) : (
-        <button
-          onClick={() => submit()}
-          disabled={!query.trim()}
-          className="flex h-11 items-center gap-2 rounded-md bg-amber px-5 font-mono text-[12px] font-semibold tracking-widest text-ink-950 uppercase transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <Play size={14} className="fill-current" />
-          Convene quorum
-        </button>
-      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="label mr-1">Quick picks</span>
+        {QUICK.map((s) => (
+          <motion.button
+            key={s}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={running}
+            onClick={() => {
+              setQuery(s)
+              submit(s)
+            }}
+            className="btn-ghost px-3 py-1 font-mono text-[11.5px] tracking-wider disabled:pointer-events-none disabled:opacity-40"
+          >
+            {s}
+          </motion.button>
+        ))}
+      </div>
     </div>
   )
 }

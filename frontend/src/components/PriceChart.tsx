@@ -16,13 +16,13 @@ import type { ChartData, ChartPoint, Decision } from '../types'
 import { num, rupee } from '../lib/format'
 
 const C = {
-  up: '#19d48a',
-  down: '#ff5a5f',
-  amber: '#ffb224',
-  info: '#4cc2ff',
-  grid: '#121820',
-  border: '#1c242e',
-  text: '#6f7a88',
+  up: '#3fd8a2',
+  down: '#f25a7c',
+  gold: '#dcb76c',
+  sapphire: '#8aaeff',
+  grid: 'rgba(120, 100, 180, 0.07)',
+  border: 'rgba(220, 183, 108, 0.14)',
+  text: '#8a83a6',
 }
 
 interface Props {
@@ -44,13 +44,17 @@ export function PriceChart({ data, verdict }: Props) {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: C.text,
-        fontFamily: 'IBM Plex Mono, ui-monospace, monospace',
+        fontFamily: 'DM Mono, ui-monospace, monospace',
         fontSize: 11,
       },
       grid: { vertLines: { color: C.grid }, horzLines: { color: C.grid } },
       rightPriceScale: { borderColor: C.border },
       timeScale: { borderColor: C.border, rightOffset: 4 },
-      crosshair: { mode: CrosshairMode.Normal },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+        vertLine: { color: 'rgba(220,183,108,0.35)', labelBackgroundColor: '#9e7a3a' },
+        horzLine: { color: 'rgba(220,183,108,0.35)', labelBackgroundColor: '#9e7a3a' },
+      },
       // let the mouse wheel scroll the page; drag / pinch still pan and zoom the chart
       handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale: { mouseWheel: false, pinch: true, axisPressedMouseMove: true },
@@ -72,8 +76,8 @@ export function PriceChart({ data, verdict }: Props) {
       const s = chart.addSeries(LineSeries, { color, lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
       s.setData(data.series.filter((d) => d[key] != null).map((d) => ({ time: d.time as Time, value: d[key] as number })))
     }
-    sma('sma20', C.amber)
-    sma('sma50', C.info)
+    sma('sma20', C.gold)
+    sma('sma50', C.sapphire)
 
     const vol = chart.addSeries(HistogramSeries, { priceFormat: { type: 'volume' }, priceScaleId: '', lastValueVisible: false, priceLineVisible: false })
     vol.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } })
@@ -81,7 +85,7 @@ export function PriceChart({ data, verdict }: Props) {
       data.series.map((d) => ({
         time: d.time as Time,
         value: d.volume,
-        color: d.close >= d.open ? 'rgba(25,212,138,0.32)' : 'rgba(255,90,95,0.32)',
+        color: d.close >= d.open ? 'rgba(63,216,162,0.28)' : 'rgba(242,90,124,0.28)',
       })),
     )
 
@@ -117,7 +121,7 @@ export function PriceChart({ data, verdict }: Props) {
       {
         time: last.time as Time,
         position: verdict === 'SELL' ? 'aboveBar' : 'belowBar',
-        color: verdict === 'BUY' ? C.up : verdict === 'SELL' ? C.down : C.amber,
+        color: verdict === 'BUY' ? C.up : verdict === 'SELL' ? C.down : C.gold,
         shape: verdict === 'BUY' ? 'arrowUp' : verdict === 'SELL' ? 'arrowDown' : 'circle',
         text: verdict,
       },
@@ -130,7 +134,7 @@ export function PriceChart({ data, verdict }: Props) {
   return (
     <div className="relative h-full min-h-[320px]">
       {shown && (
-        <div className="pointer-events-none absolute top-2 left-3 z-10 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[11px]">
+        <div className="pointer-events-none absolute top-2 left-3 z-10 flex flex-wrap gap-x-3.5 gap-y-0.5 font-mono text-[11px]">
           <span className="text-dim">{shown.time}</span>
           <span className="text-muted">
             O <span className="text-fg">{num(shown.open)}</span>
@@ -144,7 +148,7 @@ export function PriceChart({ data, verdict }: Props) {
           <span className="text-muted">
             C <span className={shown.close >= shown.open ? 'text-up' : 'text-down'}>{rupee(shown.close)}</span>
           </span>
-          <span className="text-amber">SMA20 {num(shown.sma20)}</span>
+          <span className="text-gold">SMA20 {num(shown.sma20)}</span>
           <span className="text-info">SMA50 {num(shown.sma50)}</span>
         </div>
       )}
